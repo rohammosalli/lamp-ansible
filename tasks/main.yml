@@ -1,0 +1,62 @@
+---
+- name: LEMP Stack Installation for wordpress 
+  hosts: all
+  gather_facts: true
+  become: yes
+  become_user: root
+  vars:
+    mysql_root_password: passwd
+    mysql_old_root_password: passwd
+    mysql_socket: "/var/lib/mysql"
+
+  tasks:
+    - include: mariadb_install.yml
+      notify: 
+      - systemctl start mariadb
+    
+    - include : mariadb_secure_installation.yml
+      vars:
+        mysql_socket: "/var/lib/mysql"
+        mysql_root_password: passwd
+        mysql_old_root_password: passwd
+
+    - include: nginx.yml
+      notify:
+      - systemctl restart nginx
+    
+    - include: php-fpm.yml
+    
+    - include: phpmyadmin.yml
+      notify:
+      - systemctl restart php-fpm
+      - systemctl restrat nginx
+  
+    - name: declare hostname
+      debug:
+        msg: "{{ansible_hostname}}.{{ansible_domain}}"
+
+    - include: wordpress.yml
+      vars:
+        mysql_root_password: passwd
+      notify:
+      - systemctl restart nginx
+      - systemctl restart php-fpm
+      
+  handlers:
+    - name: systemctl start mariadb
+      service:
+        name: mariadb
+        state: started
+        enabled: true
+
+    - name: systemctl restart nginx
+      service:
+        name: nginx
+        state: restarted
+        enabled: true
+
+    - name: systemctl restart php-fpm
+      service:
+        name: php-fpm
+        state: restarted
+        enabled: true

@@ -1,0 +1,72 @@
+---
+    - name: Configure wordpress
+      template:
+        src: ../templates/wordpress.conf.j2
+        dest: /etc/nginx/conf.d/wordpress.conf
+      notify:
+      - systemctl restart nginx
+      - systemctl restart php-fpm
+
+    - name: Create wordpress database
+      mysql_db:
+        login_user: root
+        login_password: "{{mysql_root_password}}"
+        name: wordpress
+        state: present
+
+    - name: create mariadb user
+      mysql_user:
+        login_user: root
+        login_password: "{{mysql_root_password}}"
+        name: wpuser
+        password: wppassword
+        host: localhost
+        state: present
+        priv: 'wordpress.*:ALL'
+
+    - name: download wordpress latest.tar.gz
+      get_url:
+        url: http://wordpress.org/latest.tar.gz
+        dest: /tmp/latest.tar.gz
+
+    - name: Extract latest.tar.gz into /usr/share/nginx/wordpress
+      unarchive:
+        src: /tmp/latest.tar.gz
+        dest: /usr/share/nginx/
+        remote_src: yes
+        owner: nginx
+        group: nginx
+
+    - name: rename /usr/share/nginx/wordpress to /usr/share/nginx/wordpress.{{ansible_domain}}
+      command: mv /usr/share/nginx/wordpress /usr/share/nginx/wordpress.{{ansible_domain}}
+
+    - name: create Wordpress logs directory
+      file:
+        path: /usr/share/nginx/wordpress.{{ansible_domain}}/logs
+        state: directory
+        owner: nginx
+
+    - name: access Log file
+      file:
+        path: /usr/share/nginx/wordpress.{{ansible_domain}}/logs/access.log
+        state: touch
+        owner: nginx
+
+    - name: error Log file
+      file:
+        path: /usr/share/nginx/wordpress.{{ansible_domain}}/logs/error.log
+        state: touch
+        owner: nginx
+
+
+    - name: /usr/share/nginx/wordpress.{{ansible_domain}}/ permission set
+      file:
+        path: /usr/share/nginx/wordpress.{{ansible_domain}}
+        recurse: true
+        owner: nginx
+        group: nginx
+
+    - name: wp-config.php
+      copy:
+        src: ../files/wp-config.php
+        dest: /usr/share/nginx/wordpress.{{ansible_domain}}/wp-config.php

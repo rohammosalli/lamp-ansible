@@ -1,0 +1,30 @@
+---
+    - name: Install php-fpm
+      yum:
+        name: php-fpm
+        state: present
+
+    - name: Install php-mysql
+      yum:
+        name: php-mysql
+        state: present
+
+    - name: Install php-cli
+      yum:
+        name: php-cli
+        state: present
+
+    - name: copy php.ini
+      copy:
+        src: ../files/php.ini
+        dest: /etc/php.ini
+
+    - name: copy www.conf
+      copy:
+        src: ../files/www.conf
+        dest: /etc/php-fpm.d/www.conf
+
+    - name: creating virtualHost
+      template:
+        src: ../templates/virtual.conf.j2
+        dest: /etc/nginx/conf.d/virtual.conf

@@ -1,0 +1,17 @@
+---
+- name: install the nginx rpm from a remote repo
+  yum:
+    name: http://nginx.org/packages/rhel/7/noarch/RPMS/nginx-release-rhel-7-0.el7.ngx.noarch.rpm
+    state: present
+
+- name: Install nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Firewall Rule
+  firewalld:
+    service: https
+    permanent: true
+    state: enabled
+    immediate: true
